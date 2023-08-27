@@ -13,7 +13,8 @@ int main() {
 	const int BATCH_NUM = trainingSet.getSize() / BATCH_SIZE;
 	int batch = 0;
 	while (1) { // while cost is high
-		Eigen::VectorXd avgGradient(net.getControlsSize()).zeros();
+		printf("Computing batch %i ... ", batch);
+		Eigen::VectorXd avgGradient = Eigen::VectorXd::Zero(net.getControlsSize());
 		double avgCost = 0;
 		for (int img = 0; img < BATCH_SIZE; img++) {
 			int idx = batch * BATCH_SIZE + img;
@@ -23,8 +24,8 @@ int main() {
 		}
 		avgGradient /= BATCH_SIZE;
 		avgCost /= BATCH_SIZE;
-		// log cost
-		// Apply avg gradient to network, subtracting
+		net.offsetControls(-avgGradient);
+		printf("Done\nCost: %f\n\n", avgCost);
 		batch++;
 		if (batch == BATCH_NUM) {
 			batch = 0;

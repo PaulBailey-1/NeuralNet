@@ -21,8 +21,12 @@ Eigen::VectorXd sigmoid(Eigen::VectorXd x) {
     return out;
 }
 
-Network::Network(int inputLayerDim, int outputLayerDim, int hiddenLayerDim, int hiddenLayers) {
+double sigmoidDeriv(double x) {
+    double ex = exp(x);
+    return ex / ((ex + 1) * (ex + 1));
+}
 
+Network::Network(int inputLayerDim, int outputLayerDim, int hiddenLayerDim, int hiddenLayers) {
     _layers.push_back(Layer(inputLayerDim, 0));
     int previousLayerDim = inputLayerDim;
     for (int i = 0; i < hiddenLayers; i++) {
@@ -30,13 +34,11 @@ Network::Network(int inputLayerDim, int outputLayerDim, int hiddenLayerDim, int 
         previousLayerDim = hiddenLayerDim;
     }
     _layers.push_back(Layer(outputLayerDim, previousLayerDim));
-
 }
 
 // deprecated
 void Network::initRandom() {
     std::srand(std::time(nullptr));
-
     for (int i = 0; i < _layers.size(); i++) {
         for (int j = 0; _layers[i].dim; j++) {
             _layers[i].activations(j) = getRand();
@@ -49,10 +51,8 @@ void Network::initRandom() {
 }
 
 Eigen::VectorXd Network::evaluate(const Eigen::VectorXd& input) {
-
     if (input.size() != _layers.front().activations.size()) {
         printf("Error: input dimension mismatch");
-        return;
     }
     _layers.front().activations = input;
     for (int i = 1; i < _layers.size(); i++) {
@@ -78,17 +78,29 @@ void Network::backPropagate(Eigen::VectorXd& gradient, int gi, int l, Eigen::Vec
     if (l == 1) {
         return;
     }
-
     // Find the desired activations changes of l-1
-    Eigen::VectorXd next_pdA(_layers[l-1].dim); // p deriv of C/A across k
+    Eigen::VectorXd next_pdA = Eigen::VectorXd::Zero(_layers[l-1].dim); // p deriv of C/A across k
     for (int k = 0; k < _layers[l-1].dim; k++) {
         for (int j = 0; j < _layers[l].dim; j++) {
             next_pdA(k) += 2 * pdA(j) * sigmoidDeriv(z(j)) * _layers[l].weights(j, k); // repeated above
         }
     }
-
     backPropagate(gradient, gi + _layers[l].dim * (_layers[l-1].dim + 1), l - 1, next_pdA);
 
+}
+
+void Network::offsetControls(const Eigen::VectorXd& offset) {
+    int i = 0;
+    for (int l = _layers.size() - 1; l > 0; l--) {
+        Eigen::MatrixXd combined;
+        for (int j = 0; j < _layers[l].dim; j++) {
+            Eigen::VectorXd seg = offset.segment(i, _layers[l-1].dim);
+            i += _layers[l-1].dim;
+            combined.row(j) = seg.transpose();
+        }
+        _layers[l].biases += combined.col(0);
+        _layers[l].weights += combined.rightCols(combined.rows() - 1);
+    }
 }
 
 int Network::getControlsSize() {
@@ -103,11 +115,7 @@ int Network::getControlsSize() {
 
 Network::Layer::Layer(int dim, int lastLayerDim) {
     dim = dim;
-    activations(dim);
-    biases(dim);
-    weights(dim, lastLayerDim);
-
-    activations.setRandom();
-    biases.setRandom();
-    weights.setRandom();
+    activations = Eigen::VectorXd::Random(dim);
+    biases = Eigen::VectorXd::Random(dim);
+    weights = Eigen::MatrixXd::Random(dim, lastLayerDim);
 }

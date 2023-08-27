@@ -26,6 +26,7 @@ public:
 	void initRandom();
 	Eigen::VectorXd evaluate(const Eigen::VectorXd& input);
 	void backPropagate(Eigen::VectorXd& gradient, int gi, int l, Eigen::VectorXd pdA);
+	void offsetControls(const Eigen::VectorXd& offset);
 
 	int getControlsSize();
 	int getNumLayers() {return _layers.size();}
