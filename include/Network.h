@@ -7,11 +7,8 @@ class Network {
 public:
 
 	struct Layer {
-	// public:
 
 		Layer(int dim, int lastLayerDim);
-
-	// private:
 
 		int dim;
 
@@ -27,6 +24,7 @@ public:
 	Eigen::VectorXd evaluate(const Eigen::VectorXd& input);
 	void backPropagate(Eigen::VectorXd& gradient, int gi, int l, Eigen::VectorXd pdA);
 	void offsetControls(const Eigen::VectorXd& offset);
+	void saveModel(std::string fileName);
 
 	int getControlsSize();
 	int getNumLayers() {return _layers.size();}

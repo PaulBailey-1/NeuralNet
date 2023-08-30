@@ -11,6 +11,11 @@ public:
         // Eigen::MatrixXd img;
         Eigen::VectorXd img;
         Eigen::VectorXd label;
+
+        DataCase(int dataDim, int labelDim) {
+            img = Eigen::VectorXd(dataDim);
+            label = Eigen::VectorXd::Zero(labelDim);
+        }
     };
 
     DataSet(std::string imageFileName, std::string labelFileName);

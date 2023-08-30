@@ -1,6 +1,8 @@
 
 #include <cstdlib>
 #include <ctime>
+#include <iostream>
+#include <fstream>
 
 #include "Network.h"
 
@@ -24,6 +26,13 @@ Eigen::VectorXd sigmoid(Eigen::VectorXd x) {
 double sigmoidDeriv(double x) {
     double ex = exp(x);
     return ex / ((ex + 1) * (ex + 1));
+}
+
+Network::Layer::Layer(int thisDim, int lastLayerDim) {
+    dim = thisDim;
+    activations = Eigen::VectorXd::Random(thisDim);
+    biases = Eigen::VectorXd::Random(thisDim);
+    weights = Eigen::MatrixXd::Random(thisDim, lastLayerDim);
 }
 
 Network::Network(int inputLayerDim, int outputLayerDim, int hiddenLayerDim, int hiddenLayers) {
@@ -70,8 +79,10 @@ void Network::backPropagate(Eigen::VectorXd& gradient, int gi, int l, Eigen::Vec
     for (int j = 0; j < _layers[l].dim; j++) {
         double pdBj = 2 * pdA(j) * sigmoidDeriv(z(j)); // p deriv of C/Bj
         gradient(gi) += pdBj;
+        gi++;
         for (int k = 0; k < _layers[l-1].dim; k++) {
             gradient(gi) += pdBj * _layers[l-1].activations(k); // p deriv of C/Wjk
+            gi++;
         }
     }
 
@@ -85,21 +96,21 @@ void Network::backPropagate(Eigen::VectorXd& gradient, int gi, int l, Eigen::Vec
             next_pdA(k) += 2 * pdA(j) * sigmoidDeriv(z(j)) * _layers[l].weights(j, k); // repeated above
         }
     }
-    backPropagate(gradient, gi + _layers[l].dim * (_layers[l-1].dim + 1), l - 1, next_pdA);
+    backPropagate(gradient, gi, l - 1, next_pdA);
 
 }
 
 void Network::offsetControls(const Eigen::VectorXd& offset) {
     int i = 0;
     for (int l = _layers.size() - 1; l > 0; l--) {
-        Eigen::MatrixXd combined;
+        Eigen::MatrixXd combined(_layers[l].dim, _layers[l-1].dim + 1);
         for (int j = 0; j < _layers[l].dim; j++) {
-            Eigen::VectorXd seg = offset.segment(i, _layers[l-1].dim);
-            i += _layers[l-1].dim;
+            Eigen::VectorXd seg = offset.segment(i, _layers[l-1].dim + 1);
+            i += _layers[l-1].dim + 1;
             combined.row(j) = seg.transpose();
         }
         _layers[l].biases += combined.col(0);
-        _layers[l].weights += combined.rightCols(combined.rows() - 1);
+        _layers[l].weights += combined.rightCols(combined.cols() - 1);
     }
 }
 
@@ -113,9 +124,22 @@ int Network::getControlsSize() {
     return size;
 }
 
-Network::Layer::Layer(int dim, int lastLayerDim) {
-    dim = dim;
-    activations = Eigen::VectorXd::Random(dim);
-    biases = Eigen::VectorXd::Random(dim);
-    weights = Eigen::MatrixXd::Random(dim, lastLayerDim);
+void Network::saveModel(std::string filename)  {
+    std::ofstream outFile(filename, std::ios::binary);
+    if (!outFile.is_open()) {
+        printf("Error: Could not create file: '%s'", filename.c_str());
+        return;
+    }
+    
+    int numLayers = _layers.size();
+    outFile.write((char*) &numLayers, sizeof(int));
+    for (Layer& layer : _layers) {
+        int layerDim = layer.dim;
+        outFile.write((char*) &numLayers, sizeof(int));
+        outFile.write((char*) layer.biases.data(), sizeof(double) * layer.dim);
+        if (layer.weights.cols() != 0) {
+            outFile.write((char*) layer.weights.data(), sizeof(double) * layer.weights.rows() * layer.weights.cols());
+        }
+    }
+    outFile.close();
 }

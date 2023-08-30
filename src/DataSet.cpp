@@ -42,25 +42,29 @@ DataSet::DataSet(std::string imagesFileName, std::string labelsFileName) {
             throw;
         }
 
+        printf("Loading dataset ... ");
+
         char* imgBuffer = new char[_imagesNum * _imgWidth * _imgHeight]; // should i delete this?
         char* labelBuffer = new char[_imagesNum];
 
-        imagesFile.read(imgBuffer, sizeof(imgBuffer));
-        labelsFile.read(labelBuffer, sizeof(labelBuffer));
+        imagesFile.read(imgBuffer, _imagesNum * _imgWidth * _imgHeight);
+        labelsFile.read(labelBuffer, _imagesNum);
 
         imagesFile.close();
         labelsFile.close();
 
         _dataSet.resize(_imagesNum);
 
-        for (int i = 0; i > _imagesNum; i++) {
-            DataCase* dataCase = new DataCase();
+        for (int i = 0; i < _imagesNum; i++) {
+            DataCase* dataCase = new DataCase(_imgWidth * _imgHeight, 10);
             dataCase->img = Map<Matrix<uint8_t, Dynamic, Dynamic, RowMajor>>((uint8_t*)(imgBuffer + i * _imgWidth * _imgHeight), _imgWidth, _imgHeight).reshaped().cast<double>() / 255.0;
-            dataCase->label = VectorXd(10).setZero();
             dataCase->label(labelBuffer[i]) = 1.0;
-            _dataSet.push_back(dataCase);
+            _dataSet[i] = dataCase;
         }
         delete labelBuffer;
+
+        printf("done\n");
+
     } catch (...) {
         printf("Failed reading dataset from %s and %s", imagesFileName.c_str(), labelsFileName.c_str());
     }
