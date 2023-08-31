@@ -13,5 +13,7 @@ set(sources
 
 include_directories("include/")
 
+include_directories ( "${MSYS2_DIR}/ucrt64/include/eigen3" )
+
 add_executable( neuralNet ${sources} )
 
