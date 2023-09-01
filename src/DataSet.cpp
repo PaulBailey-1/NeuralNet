@@ -19,6 +19,8 @@ int getHeaderInt(std::ifstream& file) {
 
 DataSet::DataSet(std::string imagesFileName, std::string labelsFileName) {
 
+    printf("Loading dataset from %s ... ", imagesFileName.c_str());
+
     try {
         std::ifstream imagesFile(imagesFileName, std::ios::in | std::ios::binary);
         std::ifstream labelsFile(labelsFileName, std::ios::in | std::ios::binary);
@@ -42,9 +44,7 @@ DataSet::DataSet(std::string imagesFileName, std::string labelsFileName) {
             throw;
         }
 
-        printf("Loading dataset ... ");
-
-        char* imgBuffer = new char[_imagesNum * _imgWidth * _imgHeight]; // should i delete this?
+        char* imgBuffer = new char[_imagesNum * _imgWidth * _imgHeight];
         char* labelBuffer = new char[_imagesNum];
 
         imagesFile.read(imgBuffer, _imagesNum * _imgWidth * _imgHeight);
@@ -62,6 +62,7 @@ DataSet::DataSet(std::string imagesFileName, std::string labelsFileName) {
             _dataSet[i] = dataCase;
         }
         delete labelBuffer;
+        delete imgBuffer;
 
         printf("done\n");
 

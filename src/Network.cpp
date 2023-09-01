@@ -36,6 +36,7 @@ Network::Layer::Layer(int thisDim, int lastLayerDim) {
 }
 
 Network::Network(int inputLayerDim, int outputLayerDim, int hiddenLayerDim, int hiddenLayers) {
+    printf("Creating network... ");
     _layers.push_back(Layer(inputLayerDim, 0));
     int previousLayerDim = inputLayerDim;
     for (int i = 0; i < hiddenLayers; i++) {
@@ -43,6 +44,7 @@ Network::Network(int inputLayerDim, int outputLayerDim, int hiddenLayerDim, int 
         previousLayerDim = hiddenLayerDim;
     }
     _layers.push_back(Layer(outputLayerDim, previousLayerDim));
+    printf("done\n");
 }
 
 // deprecated
@@ -65,7 +67,8 @@ Eigen::VectorXd Network::evaluate(const Eigen::VectorXd& input) {
     }
     _layers.front().activations = input;
     for (int i = 1; i < _layers.size(); i++) {
-        _layers[i].activations = sigmoid(_layers[i].weights * _layers[i-1].activations + _layers[i].biases);
+        _layers[i].zActivations = _layers[i].weights * _layers[i-1].activations + _layers[i].biases;
+        _layers[i].activations = sigmoid(_layers[i].zActivations);
     }
     return _layers.back().activations;
 }
@@ -75,9 +78,9 @@ Eigen::VectorXd Network::evaluate(const Eigen::VectorXd& input) {
 void Network::backPropagate(Eigen::VectorXd& gradient, int gi, int l, Eigen::VectorXd pdA) {
 
     // Find desired changes to weights & biases, pd of w across L and L-1 & vec of pd ob b across L appended to gradient
-    Eigen::VectorXd z = _layers[l].weights * _layers[l-1].activations + _layers[l].biases; // same as above
+    Eigen::VectorXd pdB = Eigen::VectorXd(_layers[l].dim);
     for (int j = 0; j < _layers[l].dim; j++) {
-        double pdBj = 2 * pdA(j) * sigmoidDeriv(z(j)); // p deriv of C/Bj
+        double pdBj = 2 * pdA(j) * sigmoidDeriv(_layers[l].zActivations(j)); // p deriv of C/Bj
         gradient(gi) += pdBj;
         gi++;
         for (int k = 0; k < _layers[l-1].dim; k++) {
@@ -93,7 +96,7 @@ void Network::backPropagate(Eigen::VectorXd& gradient, int gi, int l, Eigen::Vec
     Eigen::VectorXd next_pdA = Eigen::VectorXd::Zero(_layers[l-1].dim); // p deriv of C/A across k
     for (int k = 0; k < _layers[l-1].dim; k++) {
         for (int j = 0; j < _layers[l].dim; j++) {
-            next_pdA(k) += 2 * pdA(j) * sigmoidDeriv(z(j)) * _layers[l].weights(j, k); // repeated above
+            next_pdA(k) += 2 * pdA(j) * sigmoidDeriv(_layers[l].zActivations(j)) * _layers[l].weights(j, k); // repeated above
         }
     }
     backPropagate(gradient, gi, l - 1, next_pdA);
@@ -125,6 +128,7 @@ int Network::getControlsSize() {
 }
 
 void Network::saveModel(std::string filename)  {
+    printf("Saving model to %s ... ", filename.c_str());
     std::ofstream outFile(filename, std::ios::binary);
     if (!outFile.is_open()) {
         printf("Error: Could not create file: '%s'", filename.c_str());
@@ -142,4 +146,5 @@ void Network::saveModel(std::string filename)  {
         }
     }
     outFile.close();
+    printf("Saved\n");
 }

@@ -16,6 +16,8 @@ public:
 		Eigen::VectorXd biases;
 		Eigen::MatrixXd weights; // from the previous layer to this
 
+		Eigen::VectorXd zActivations;
+
 	};
 
   Network(int inputLayerDim, int outputLayerDim, int hiddenLayerDim, int hiddenLayers);
