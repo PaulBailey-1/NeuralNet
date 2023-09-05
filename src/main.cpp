@@ -2,16 +2,53 @@
 #include <cstdio>
 #include <chrono>
 #include <vector>
+#include <thread>
 
 #include <matplot/matplot.h>
+#include <Eigen/Dense>
+#include <SFML/Graphics.hpp>
 
 #include "Dataset.h"
 #include "Network.h"
 
+void displayLoop(bool& save) {
+	sf::RenderWindow window(sf::VideoMode(200, 200), "NeuralNet");
+	while(window.isOpen()) {
+		sf::Event event;
+		while (window.pollEvent(event))
+		{
+			switch (event.type)
+			{
+				case sf::Event::Closed:
+					window.close();
+					break;
+
+				case sf::Event::KeyReleased:
+					if (event.key.code == sf::Keyboard::S) {
+						save = true;
+					}
+					break;
+				default:
+					break;
+			}
+		}
+	}
+}
+
 int main(int argc, char* argv[]) {
 	
 	DataSet trainingSet("../datasets/train-images-idx3-ubyte", "../datasets/train-labels-idx1-ubyte");
-	Network net(trainingSet.getImgWidth() * trainingSet.getImgHeight(), 10, 16, 2);
+	Network net(trainingSet.getImgWidth() * trainingSet.getImgHeight(), 10, 32, 2);
+
+	printf("Opening plot... ");;
+	matplot::xlabel("Time (s)");
+	matplot::ylabel("Accuracy (%)");
+	printf("done\n");
+
+	printf("Opening window... ");
+	bool save = false;
+	std::thread(displayLoop, std::ref(save));
+	printf("done\n");
 
 	const int BATCH_SIZE = 500;
 	const int BATCH_NUM = trainingSet.getSize() / BATCH_SIZE;
@@ -25,11 +62,8 @@ int main(int argc, char* argv[]) {
 	int deltaBatches = 0;
 	std::chrono::time_point<std::chrono::high_resolution_clock> startTime;
 
-	matplot::xlabel("Time (s)");
-	matplot::ylabel("Accuracy (%)");
-
 	printf("Training...\n");
-	while (accuracy < 0.9) {
+	while (accuracy < 0.99) {
 		startTime = std::chrono::high_resolution_clock::now();
 		Eigen::VectorXd avgGradient = Eigen::VectorXd::Zero(net.getControlsSize());
 		double avgCost = 0;
@@ -59,11 +93,21 @@ int main(int argc, char* argv[]) {
 		accuracies.push_back(accuracy * 100);
 		deltaBatches++;
 		if (times.back() - lastPlotTime > 5.0) {
+
 			matplot::plot(times, accuracies);
+			// cv::Mat frame;
+			// eigen2cv(trainingSet.getImg(batch * BATCH_SIZE), frame);
+			// imshow("Viewer", frame);
+
 			lastPlotTime = times.back();
 			printf("Finished %i batches (%i to %i)\nAvg. Time: %f Cost: %f Accuracy: %f%\n\n", deltaBatches, lastLogBatch, batch, avgBatchTime, avgCost, accuracy * 100);
 			lastLogBatch = batch;
 			deltaBatches = 0;
+
+			if (save) {
+				break;
+			}
+
 		}
 
 		batch++;
