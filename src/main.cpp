@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) {
 
 	printf("Opening window... ");
 	bool save = false;
-	std::thread(displayLoop, std::ref(save));
+	std::thread displayThread(displayLoop, std::ref(save));
 	printf("done\n");
 
 	const int BATCH_SIZE = 500;
@@ -132,5 +132,7 @@ int main(int argc, char* argv[]) {
 	printf("Tested %i cases in %fs\nAccuracy: %f%\n\n", testingSet.getSize(), elapsedTime, accuracy * 100);
 
 	net.saveModel("../models/model");
+
+	displayThread.join();
 
 }

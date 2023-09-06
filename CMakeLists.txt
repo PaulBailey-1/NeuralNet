@@ -16,15 +16,12 @@ set(sources
 
 include_directories("include/")
 
-include_directories("/c/Users/100053092/source/repos/matplotplusplus/source/")
-link_directories("/c/Users/100053092/source/repos/matplotplusplus/build/source/matplot/")
-link_directories("/c/Users/100053092/source/repos/matplotplusplus/build/source/3rd_party/")
-
-include_directories ( "${MSYS2_DIR}/ucrt64/include/eigen3" )
-
-include_directories("/c/Users/100053092/source/repos/msys64/ucrt64/include")
-link_directories("/c/Users/100053092/source/repos/msys64/ucrt64/lib")
+find_package(Matplot++ REQUIRED)
+find_package(Eigen3 REQUIRED)
+include_directories(${EIGEN3_INCLUDE_DIRS})
+set(THREADS_PREFER_PTHREAD_FLAG ON)
+find_package(Threads REQUIRED)
 
 add_executable( neuralNet ${sources} )
 
-target_link_libraries(neuralNet matplot nodesoup sfml-graphics.dll.a sfml-window.dll.a sfml-system.dll.a)
+target_link_libraries(neuralNet PUBLIC Matplot++::matplot sfml-system sfml-graphics sfml-window PRIVATE Threads::Threads)

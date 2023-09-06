@@ -57,7 +57,7 @@ DataSet::DataSet(std::string imagesFileName, std::string labelsFileName) {
 
         for (int i = 0; i < _imagesNum; i++) {
             DataCase* dataCase = new DataCase(_imgWidth * _imgHeight, 10);
-            dataCase->img = Map<Matrix<uint8_t, Dynamic, Dynamic, RowMajor>>((uint8_t*)(imgBuffer + i * _imgWidth * _imgHeight), _imgWidth, _imgHeight).reshaped().cast<double>() / 255.0;
+            dataCase->img = Map<Matrix<uint8_t, Dynamic, 1>>((uint8_t*)(imgBuffer + i * _imgWidth * _imgHeight), _imgWidth * _imgHeight, 1).cast<double>() / 255.0;
             dataCase->label(labelBuffer[i]) = 1.0;
             _dataSet[i] = dataCase;
         }
